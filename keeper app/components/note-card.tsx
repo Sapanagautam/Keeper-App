@@ -1,5 +1,12 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Bell, Edit, FileText, Pin, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { DeleteConfirmationModal } from "./delete-confirmation-modal"
@@ -38,6 +45,7 @@ export function NoteCard({
   const [showReminderModal, setShowReminderModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showViewDialog, setShowViewDialog] = useState(false)
 
   const handleDelete = () => {
     setShowDeleteModal(true)
@@ -65,6 +73,11 @@ export function NoteCard({
 
   const handleUpdateNote = (newTitle: string, newContent: string) => {
     onEdit?.(id, newTitle, newContent)
+  }
+
+  const handleCardClick = () => {
+    setShowViewDialog(true)
+    onClick?.(id)
   }
 
   const formatDate = (date: Date) => {
@@ -101,7 +114,7 @@ export function NoteCard({
       >
         <div className="flex items-start justify-between gap-4">
           {/* Note Content */}
-          <div onClick={() => onClick?.(id)} className="cursor-pointer flex-1">
+          <div onClick={handleCardClick} className="cursor-pointer flex-1">
             <div className="flex items-center gap-3 mb-2">
               <div className={`p-2 rounded-lg ${hasReminder ? "bg-accent/10" : "bg-primary/10"}`}>
                 {hasReminder ? (
@@ -165,6 +178,66 @@ export function NoteCard({
           </div>
         </div>
       </div>
+
+      {/* View Dialog - NEW */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-xl pr-8 flex items-center gap-2">
+              {title}
+              {isPinned && <Pin size={16} className="text-primary" />}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto mt-4 space-y-4">
+            <div className="prose prose-sm max-w-none">
+              <p className="text-base whitespace-pre-wrap leading-relaxed text-foreground">
+                {content}
+              </p>
+            </div>
+            <div className="pt-4 border-t flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Created: {createdAt.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+              {hasReminder && reminderDate && (
+                <div className="flex items-center gap-2 text-xs text-accent">
+                  <Bell size={14} />
+                  <span>Reminder: {new Date(reminderDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => setShowViewDialog(false)}
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setShowViewDialog(false)
+                handleEdit()
+              }}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Note
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* SetReminderModal component */}
       <SetReminderModal

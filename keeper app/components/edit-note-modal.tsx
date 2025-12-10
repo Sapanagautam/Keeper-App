@@ -17,15 +17,14 @@ interface EditNoteModalProps {
 }
 
 export function EditNoteModal({ isOpen, onClose, onUpdate, currentTitle, currentContent }: EditNoteModalProps) {
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
+  const [title, setTitle] = useState(currentTitle)
+  const [content, setContent] = useState(currentContent)
 
+  // Update local state when props change
   useEffect(() => {
-    if (isOpen) {
-      setTitle(currentTitle)
-      setContent(currentContent)
-    }
-  }, [isOpen, currentTitle, currentContent])
+    setTitle(currentTitle)
+    setContent(currentContent)
+  }, [currentTitle, currentContent])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,24 +35,47 @@ export function EditNoteModal({ isOpen, onClose, onUpdate, currentTitle, current
   }
 
   const handleClose = () => {
-    setTitle("")
-    setContent("")
+    // Reset to current values instead of empty strings
+    setTitle(currentTitle)
+    setContent(currentContent)
     onClose()
   }
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-background rounded-lg shadow-lg w-full max-w-md">
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={handleClose}
+    >
+      <div 
+        className="bg-background rounded-lg shadow-lg w-full max-w-md"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-foreground">Edit note</h2>
-          <button onClick={handleClose} className="text-muted-foreground hover:text-foreground transition-colors">
+          <button 
+            type="button"
+            onClick={handleClose} 
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div className="p-6 space-y-4">
           <div>
             <Input
               type="text"
@@ -62,6 +84,7 @@ export function EditNoteModal({ isOpen, onClose, onUpdate, currentTitle, current
               onChange={(e) => setTitle(e.target.value)}
               className="w-full"
               required
+              autoFocus
             />
           </div>
 
@@ -74,12 +97,24 @@ export function EditNoteModal({ isOpen, onClose, onUpdate, currentTitle, current
             />
           </div>
 
-          <div className="flex justify-end">
-            <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground px-6">
+          <div className="flex justify-end gap-2">
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={handleClose}
+              className="px-6"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleSubmit}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
+            >
               Update
             </Button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )
