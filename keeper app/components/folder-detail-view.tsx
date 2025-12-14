@@ -25,11 +25,17 @@ interface FolderDetailViewProps {
 
 export function FolderDetailView({ folderId, folderName, onBack }: FolderDetailViewProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null)
   const [notes, setNotes] = useState<Note[]>([])
   const [searchQuery, setSearchQuery] = useState("")
 
   // Load notes for this folder from localStorage
   useEffect(() => {
+    loadNotes()
+  }, [folderId])
+
+  const loadNotes = () => {
     const savedNotes = localStorage.getItem("keeper-notes")
     if (savedNotes) {
       try {
@@ -45,7 +51,7 @@ export function FolderDetailView({ folderId, folderName, onBack }: FolderDetailV
         console.error("Error loading notes:", error)
       }
     }
-  }, [folderId])
+  }
 
   const handleCreateNote = (noteData: { title: string; content: string; isReminder: boolean }) => {
     const newNote: Note = {
@@ -66,6 +72,36 @@ export function FolderDetailView({ folderId, folderName, onBack }: FolderDetailV
     localStorage.setItem("keeper-notes", JSON.stringify(updatedNotes))
 
     setNotes((prev) => [...prev, newNote])
+  }
+
+  // This function is called from NoteCard with (noteId, title, content)
+  const handleEditNote = (noteId: string, title: string, content: string) => {
+    // Update the note with new data
+    const noteToUpdate = notes.find(note => note.id === noteId)
+    if (!noteToUpdate) return
+
+    const updatedNote = {
+      ...noteToUpdate,
+      title,
+      content,
+      updatedAt: new Date(),
+    }
+
+    // Update in local state
+    const updatedNotes = notes.map((note) =>
+      note.id === noteId ? updatedNote : note
+    )
+    setNotes(updatedNotes)
+
+    // Update in localStorage
+    const savedNotes = localStorage.getItem("keeper-notes")
+    if (savedNotes) {
+      const allNotes = JSON.parse(savedNotes)
+      const updatedAllNotes = allNotes.map((note: any) =>
+        note.id === noteId ? updatedNote : note
+      )
+      localStorage.setItem("keeper-notes", JSON.stringify(updatedAllNotes))
+    }
   }
 
   const handleDeleteNote = (noteId: string) => {
@@ -160,6 +196,7 @@ export function FolderDetailView({ folderId, folderName, onBack }: FolderDetailV
               hasReminder={note.hasReminder}
               createdAt={note.createdAt}
               onDelete={handleDeleteNote}
+              onEdit={handleEditNote}
               onTogglePin={handleTogglePin}
               onToggleReminder={handleToggleReminder}
             />

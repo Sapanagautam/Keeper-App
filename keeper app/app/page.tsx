@@ -6,13 +6,46 @@ import { FoldersView } from "@/components/folders-view"
 import { NotesView } from "@/components/notes-view"
 import { SettingsView } from "@/components/settings-view"
 import { FolderPlus, Home, Settings } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 type View = "notes" | "folders" | "settings" | "folder-detail"
 
 export default function KeeperApp() {
   const [currentView, setCurrentView] = useState<View>("notes")
   const [selectedFolder, setSelectedFolder] = useState<{ id: string; name: string } | null>(null)
+
+  // Listen for folder updates and sync the selected folder name
+  useEffect(() => {
+    const handleStorageChange = () => {
+      if (selectedFolder && currentView === "folder-detail") {
+        // Load folders from localStorage
+        const savedFolders = localStorage.getItem("keeper-folders")
+        if (savedFolders) {
+          try {
+            const folders = JSON.parse(savedFolders)
+            const updatedFolder = folders.find((f: any) => f.id === selectedFolder.id)
+            
+            // If the folder name has changed, update the state
+            if (updatedFolder && updatedFolder.name !== selectedFolder.name) {
+              setSelectedFolder({ id: updatedFolder.id, name: updatedFolder.name })
+            }
+          } catch (error) {
+            console.error("Error loading folders:", error)
+          }
+        }
+      }
+    }
+
+    window.addEventListener("storage-update", handleStorageChange as EventListener)
+    
+    // Poll for changes every second (for same-tab updates)
+    const interval = setInterval(handleStorageChange, 1000)
+
+    return () => {
+      window.removeEventListener("storage-update", handleStorageChange as EventListener)
+      clearInterval(interval)
+    }
+  }, [selectedFolder, currentView])
 
   const handleFolderClick = (folderId: string, folderName: string) => {
     setSelectedFolder({ id: folderId, name: folderName })
